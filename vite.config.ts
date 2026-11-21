@@ -4,6 +4,7 @@ import devtools from 'solid-devtools/vite';
 
 export default defineConfig({
   plugins: [devtools(), solidPlugin()],
+  base: '/tranquil-player/',
   server: {
     port: 3000,
   },
