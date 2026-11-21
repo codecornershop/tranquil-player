@@ -2,8 +2,8 @@ import { Component, createSignal, onMount, For } from 'solid-js';
 import './style.css';
 
 const tracks = [
-  { name: 'trial1', src: '/audio/trial1.mp3'},
-  { name: 'nostalgia for a time that never was', src: '/audio/nostalgia for a time that never was.mp3'}
+  { name: 'trial1', src: `${import.meta.env.BASE_URL}audio/trial1.mp3`},
+  { name: 'nostalgia for a time that never was', src: `${import.meta.env.BASE_URL}audio/nostalgia for a time that never was.mp3`}
 ];
 
 const App: Component = () => {
