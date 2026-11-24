@@ -1,3 +1,5 @@
+@import './platinumPlaya.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -41,18 +43,14 @@ body {
 
 .glass-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px) saturate(1.6);
-  -webkit-backdrop-filter: blur(18px) saturate(1.6);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 -8px 32px rgba(0, 0, 0, 0.15);
-  padding: 1rem 2rem;
+  bottom: 5px;
+  left: 5px;
+  right: 5px;
+  width: calc(100% - 10px);
+  padding: 1rem;
+  border-radius: 20px;
   z-index: 100;
+  overflow: visible;
 }
 
 .player-content {
@@ -80,6 +78,7 @@ body {
 .player-controls-row {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
   width: 100%;
 }
@@ -178,7 +177,7 @@ body {
 }
 
 .track-info {
-  text-align: left;
+  text-align: center;
 }
 
 .controls {
@@ -208,11 +207,27 @@ body {
 }
 
 .volume-control {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 100px;
+  justify-content: center;
+  min-width: auto;
   flex-shrink: 0;
+}
+
+.volume-modal {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 0.5rem;
+  border-radius: 14px;
+  background: rgba(20, 22, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
 }
 
 .vol-icon {
@@ -220,10 +235,51 @@ body {
   opacity: 0.6;
 }
 
-.volume-slider {
-  width: 100%;
+.volume-slider--vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 6px;
+  height: 110px;
   accent-color: #e8e6e2;
   cursor: pointer;
+}
+
+.now-playing {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.playlist-toggle {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.vol-toggle {
+  padding: 0;
+}
+
+.glass-bg-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-bar > :not(.glass-bg-canvas),
+.playlist-toggle > :not(.glass-bg-canvas) {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {

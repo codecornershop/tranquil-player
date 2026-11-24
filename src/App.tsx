@@ -1,4 +1,6 @@
-import { Component, createSignal, onMount, For } from 'solid-js';
+import { Component, createSignal, onMount, onCleanup, For, Show } from 'solid-js';
+import { LIQUID_GLASS_VERTEX_SHADER, LIQUID_GLASS_FRAGMENT_SHADER } from './LG_shader';
+import { attachGlassShader } from './glassCanvas';
 import './style.css';
 
 const tracks = [
@@ -8,11 +10,18 @@ const tracks = [
 
 const App: Component = () => {
   let audioRef: HTMLAudioElement | undefined;
+  let barRef: HTMLDivElement | undefined;
+  let barCanvasRef: HTMLCanvasElement | undefined;
+  let playlistBtnRef: HTMLButtonElement | undefined;
+  let playlistCanvasRef: HTMLCanvasElement | undefined;
+
   const [isPlaying, setIsPlaying] = createSignal(false);
   const [currentTrack, setCurrentTrack] = createSignal(0);
   const [currentTime, setCurrentTime] = createSignal(0);
   const [duration, setDuration] = createSignal(0);
   const [volume, setVolume] = createSignal(0.8);
+  const [volumeOpen, setVolumeOpen] = createSignal(false);
+  const [playlistOpen, setPlaylistOpen] = createSignal(false);
 
   const togglePlay = () => {
     if (!audioRef) return;
@@ -73,6 +82,46 @@ const App: Component = () => {
       setDuration(audioRef!.duration);
     });
     audioRef.addEventListener('ended', () => next());
+
+    const bgCanvas = document.createElement('canvas');
+    bgCanvas.width = 512;
+    bgCanvas.height = 512;
+    const ctx = bgCanvas.getContext('2d')!;
+    const grad = ctx.createLinearGradient(0, 0, 512, 512);
+    grad.addColorStop(0, '#14161f');
+    grad.addColorStop(0.5, '#231f30');
+    grad.addColorStop(1, '#111827');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 512);
+
+    const cleanups: Array<() => void> = [];
+
+    if (barRef && barCanvasRef) {
+      const gl = barCanvasRef.getContext('webgl', { alpha: true, premultipliedAlpha: true });
+      if (gl) {
+        const tex = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bgCanvas);
+        cleanups.push(attachGlassShader(barCanvasRef, barRef, tex, LIQUID_GLASS_VERTEX_SHADER, LIQUID_GLASS_FRAGMENT_SHADER));
+      }
+    }
+
+    if (playlistBtnRef && playlistCanvasRef) {
+      const gl = playlistCanvasRef.getContext('webgl', { alpha: true, premultipliedAlpha: true });
+      if (gl) {
+        const tex = gl.createTexture()!;
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bgCanvas);
+        cleanups.push(attachGlassShader(playlistCanvasRef, playlistBtnRef, tex, LIQUID_GLASS_VERTEX_SHADER, LIQUID_GLASS_FRAGMENT_SHADER));
+      }
+    }
+    onCleanup(() => cleanups.forEach((fn) => fn()));
   });
 
   const progress = () => duration() ? (currentTime() / duration()) * 100 : 0;
@@ -85,37 +134,54 @@ const App: Component = () => {
           alt="tranquil"
           class="logo"
         />
-
-        <ul class="track-list">
-          <For each={tracks}>
-            {(track, i) => (
-              <li
-                classList={{ 'track-item': true, 'active': i() === currentTrack() }}
-                onClick={() => playTrack(i())}
-              >
-                {track.name}
-              </li>
-            )}
-          </For>
-        </ul>
-      </main>
-
-      <audio ref={audioRef} src={tracks[currentTrack()].src}/>
-
-      <div class="glass-bar">
-        <div class="player-content">
+        <div class="now-playing">
           <div class="track-info">
             <span class="track-name">{tracks[currentTrack()].name}</span>
           </div>
 
-          <div class="player-controls-row">
-            <div class="progress-wrap">
-              <span class="time">{formatTime(currentTime())}</span>
-              <div class="progress-bar" onClick={handleSeek}>
-                <div class="progress-fill" style={{ width: `${progress()}%`}}/>
-              </div>
-              <span class="time">{formatTime(duration())}</span>
+          <div class="progress-wrap">
+            <span class="time">{formatTime(currentTime())}</span>
+            <div class="progress-bar" onClick={handleSeek}>
+              <div class="progress-fill" style={{ width: `${progress()}%`}}/>
             </div>
+            <span class="time">{formatTime(duration())}</span>
+          </div>
+        </div>
+
+        
+        <Show when={playlistOpen()}>
+          <ul class="track-list">
+            <For each={tracks}>
+              {(track, i) => (
+                <li
+                  classList={{ 'track-item': true, 'active': i() === currentTrack() }}
+                  onClick={() => playTrack(i())}
+                >
+                  {track.name}
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
+      </main>
+
+      <audio ref={audioRef} src={tracks[currentTrack()].src}/>
+
+      <div ref={barRef} class="glass-bar">
+        <canvas ref={barCanvasRef} class="glass-bg-canvas" />
+        <div class="player-content">
+          <div class="player-controls-row">
+            <button
+              ref={playlistBtnRef}
+              type="button"
+              class="playlist-toggle"
+              onClick={() => setPlaylistOpen(!playlistOpen())}
+              aria-label={playlistOpen() ? 'Hide playlist' : 'Show playlist'}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+              </svg>
+            </button>
 
             <div class="controls">
               <button onClick={prev} class="ctrl-btn">
@@ -143,20 +209,31 @@ const App: Component = () => {
             </div>
 
             <div class="volume-control">
-              <span class="vol-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                </svg>
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume()}
-                onInput={handleVolume}
-                class="volume-slider"
-              />
+              <button
+                type="button"
+                class="ctrl-btn vol-toggle"
+                onClick={() => setVolumeOpen(!volumeOpen())}
+                aria-label="Toggle volume"
+              >
+                <span class="vol-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                  </svg>
+                </span>
+              </button>
+              <Show when={volumeOpen()}>
+                <div class="volume-modal" role="dialog" aria-label="Volume">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume()}
+                    onInput={handleVolume}
+                    class="volume-slider--vertical"
+                  />
+                </div>
+              </Show>
             </div>
           </div>
 
