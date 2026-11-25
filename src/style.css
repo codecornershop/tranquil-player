@@ -48,7 +48,7 @@ body {
   right: 5px;
   width: calc(100% - 10px);
   padding: 1rem;
-  border-radius: 20px;
+  border-radius: 15px;
   z-index: 100;
   overflow: visible;
 }
@@ -288,12 +288,32 @@ body {
     gap: 0.75rem;
   }
 
-  .volume-control {
-    min-width: 80px;
-  }
-
   .track-info {
     min-width: auto;
     flex: 1;
+  }
+
+  .glass-bar {
+    padding: 1rem 0.5rem;
+  }
+
+  .player-content {
+    align-items: center;
+    width: 100%;
+  }
+
+  .player-controls-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .controls {
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 }

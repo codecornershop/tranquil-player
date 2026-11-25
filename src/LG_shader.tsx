@@ -44,17 +44,23 @@ export const LIQUID_GLASS_FRAGMENT_SHADER = `
 
     // Depth 0 at rim -> 1 inward, curved with 0.25 power like a lens
     float depth01 = clamp(-d / max(min(halfSize.x, halfSize.y), 1.0), 0.0, 1.0);
-    float lensHeight = pow(depth01, 0.25);
-    float bend = (1.0 - lensHeight) * 0.025;
+    float lensHeight = pow(depth01, 0.5);
+    float edgeWeight = pow(1.0 - lensHeight, 1.35);
 
+    // Pixel space bend, not UV-space
+    float bend = edgeWeight * 12.0;
     vec2 fromCenter = normalize(p + vec2(1e-5));
-    vec2 refractedUV = clamp(baseUV - fromCenter * bend, 0.001, 0.999);
+    vec2 bendUV = fromCenter * bend / u_element_size;
+    vec2 refractedUV = clamp(baseUV - bendUV, 0.001, 0.999);
 
-    float disp = 0.003 * (1.0 - lensHeight);
+    // Pixel space dispersion
+    float disp = edgeWeight * 3.0;
+    vec2 dispUV = fromCenter * disp / u_element_size;
+
     vec3 refracted = vec3(
-      texture2D(u_bg, clamp(refractedUV + fromCenter * disp, 0.001, 0.999)).r,
+      texture2D(u_bg, clamp(refractedUV + dispUV, 0.001, 0.999)).r,
       texture2D(u_bg, refractedUV).g,
-      texture2D(u_bg, clamp(refractedUV - fromCenter * disp, 0.001, 0.999)).b
+      texture2D(u_bg, clamp(refractedUV - dispUV, 0.001, 0.999)).b
     );
 
     // Schlick Fresnel approximation
@@ -62,10 +68,10 @@ export const LIQUID_GLASS_FRAGMENT_SHADER = `
     float cosTheta = clamp(1.0 - (1.0 - lensHeight) * 0.85, 0.0, 1.0);
     float fresnel = f0 + (1.0 - f0) * pow(1.0 - cosTheta, 5.0);
 
-    vec3 glass = mix(refracted, vec3(0.85, 0.88, 0.95), fresnel * 0.18);
-    glass += vec3(1.0) * edgeRing * 0.22;
+    vec3 glass = mix(refracted, vec3(0.85, 0.88, 0.95), fresnel * 0.06);
+    glass += vec3(1.0) * edgeRing * 0.12;
 
-    float insideMask = (1.0 - smoothstep(-1.0, 0.5, d)) * 0.55;
+    float insideMask = (1.0 - smoothstep(-1.0, 2.0, d)) * 0.55;
     gl_FragColor = vec4(glass, insideMask);
   }
 `;

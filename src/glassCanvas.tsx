@@ -44,11 +44,12 @@ export function attachGlassShader(
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, bgTexture);
+    const radius = parseFloat(getComputedStyle(target).borderTopLeftRadius) || 15;
     gl.uniform1i(gl.getUniformLocation(prog, 'u_bg'), 0);
     gl.uniform2f(gl.getUniformLocation(prog, 'u_res'), window.innerWidth, window.innerHeight);
     gl.uniform2f(gl.getUniformLocation(prog, 'u_element_pos'), rect.left, rect.top);
     gl.uniform2f(gl.getUniformLocation(prog, 'u_element_size'), rect.width, rect.height);
-    gl.uniform1f(gl.getUniformLocation(prog, 'u_radius'), parseFloat(getComputedStyle(target).borderRadius) || 0);
+    gl.uniform1f(gl.getUniformLocation(prog, 'u_radius'), radius);
     gl.uniform1f(gl.getUniformLocation(prog, 'u_time'), (now - start) * 0.001);
 
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

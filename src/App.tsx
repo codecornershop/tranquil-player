@@ -88,9 +88,9 @@ const App: Component = () => {
     bgCanvas.height = 512;
     const ctx = bgCanvas.getContext('2d')!;
     const grad = ctx.createLinearGradient(0, 0, 512, 512);
-    grad.addColorStop(0, '#14161f');
-    grad.addColorStop(0.5, '#231f30');
-    grad.addColorStop(1, '#111827');
+    grad.addColorStop(0, '#1c1c1c');
+    grad.addColorStop(0.5, '#3b3b3b');
+    grad.addColorStop(1, '#1c1c1c');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 512, 512);
 
